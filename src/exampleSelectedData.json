@@ -1,0 +1,25 @@
+{
+  "@me": [
+    { "label": "Nazwa", "detail": "username", "enabled": true,"important": false },
+    { "label": "Email", "detail": "email", "enabled": true,"important": false },
+    { "label": "#ID", "detail": "discriminator", "enabled": true,"important": true },
+    { "label": "Zweryfikowany", "detail": "verified", "enabled": true,"important": true },
+    {
+      "label": "Weryfikacja 2FA",
+      "detail": "mfa_enabled",
+      "enabled": true,
+      "important": true,
+      "matchers": { "true": "Włączona", "false": "Wyłączona" }
+    }
+  ],
+  "@me/guilds": [
+    {
+      "label": "Serwery",
+      "detail": "name",
+      "enabled": true,
+      "important": false,
+      "collect": true,
+      "limit": 3
+    }
+  ]
+}

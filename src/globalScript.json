@@ -1,0 +1,90 @@
+{
+  "vars": {
+    "state": "{{ @randomWord }}"
+  },
+  "tasks": {
+    "authenticateService": {
+      "description": "Generate URL and open browser - Service will redirect user and we will get access token",
+      "steps": [
+        {
+          "action": "generateAuthenticationURI",
+          "description": "Generate authentication url with passed data",
+          "params": {
+            "authorize_uri": "{{ $authorize_uri }}",
+            "scope": "{{ $scope }}",
+            "redirect_uri": "{{ $redirect_uri }}",
+            "client_id": "{{ $client_id }}",
+            "state": "{{ $state }}",
+            "response_type": "token"
+          },
+          "return": "{{ $$value }}"
+        },
+        {
+          "action": "redirect",
+          "description": "Open browser with url from previous step",
+          "params": { "url": "{{ $$parent }}" }
+        }
+      ]
+    },
+    "requestTokens": {
+      "description": "Send form to service and then save received tokens",
+      "steps": [
+        {
+          "action": "sendForm",
+          "description": "Send request to service using POST method",
+          "params": {
+            "url": "{{ $token_endpoint_uri }}",
+            "authorization": "{{ @createBasicToken $client_id $client_secret }}",
+            "body": {
+              "grant_type": "authorization_code",
+              "code": "{{ @readStashAuthCodes $$serviceName 'code' }}",
+              "redirect_uri": "{{ $redirect_uri }}",
+              "scope": "{{ $scope }}"
+            }
+          },
+          "return": {
+            "access_token": "{{ $$value.access_token }}",
+            "refresh_token": "{{ $$value.refresh_token }}",
+            "token_type": "{{ $$value.token_type }}",
+            "expires_in": "{{ $$value.expires_in }}",
+            "received_token_time": "{{ @dateNow }}"
+          }
+        },
+        {
+          "action": "saveStashAuthCodes",
+          "description": "Save received data in store",
+          "params": { "data": "{{ $$parent }}" }
+        }
+      ]
+    },
+    "requestData": {
+      "description": "Request data from service",
+      "steps": [
+        {
+          "action": "sendGetPaths",
+          "description": "Request user data",
+          "params": {
+            "paths": "{{ $data_paths }}",
+            "access_token": "{{ @readStashAuthCodes $$serviceName 'accessToken' }}",
+            "token_type": "{{ @readStashAuthCodes $$serviceName 'tokenType' }}"
+          },
+          "return": "{{ $$value }}"
+        },
+        {
+          "action": "selectData",
+          "description": "Select data",
+          "params": {
+            "paths": "{{ $data_paths }}",
+            "selectedData": "{{ @readStash $$serviceName 'selectedData' }}"
+          },
+          "return": "{{ $$value }}"
+        },
+        {
+          "action": "updateStash",
+          "description": "Save received data in store",
+          "params": { "data": "{{ $$parent }}" }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "@me": "https://discordapp.com/api/users/@me",
+  "@me/guilds": "https://discordapp.com/api/users/@me/guilds"
+}
