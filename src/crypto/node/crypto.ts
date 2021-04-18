@@ -1,5 +1,5 @@
 import { argon2id, hash } from "argon2";
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { createCipheriv, createDecipheriv, randomBytes, BinaryToTextEncoding } from "crypto";
 
 // const decipherMethod = {
 //   gcm: "aes-256-gcm",
@@ -16,7 +16,7 @@ const createHash = (password: string, salt: Buffer): Promise<Buffer> =>
     memoryCost: 2 ** 15,
     parallelism: 2,
     type: argon2id,
-    raw: true
+    raw: true,
   });
 
 /**
@@ -37,23 +37,23 @@ const createHash = (password: string, salt: Buffer): Promise<Buffer> =>
  *
  * @param {string} data Data to encrypt
  * @param {string} password Strong password
- * @param {("base64" | "binary" | "hex")} [encoding="base64"] Output encoding
+ * @param {BinaryToTextEncoding} [encoding="base64"] Output encoding
  * @returns {Promise<string>} Encrypted data
  */
 export const encrypt = async (
   data: string,
   password: string,
-  encoding: "base64" | "binary" | "hex" = "base64"
+  encoding: BinaryToTextEncoding = "base64",
 ): Promise<string> => {
   const salt = randomBytes(64); // Create random salt
   const initVec = randomBytes(64); // Create initialization vector
   // Hash password
   const secretKey = await createHash(password, salt);
   const cipher = createCipheriv("aes-256-gcm", secretKey, initVec, {
-    authTagLength: 16
+    authTagLength: 16,
   });
   const encrypted = Buffer.from(
-    cipher.update(data, "utf8", encoding) + cipher.final(encoding)
+    cipher.update(data, "utf8", encoding) + cipher.final(encoding),
   );
   const authTag = cipher.getAuthTag();
 
@@ -65,26 +65,27 @@ export const encrypt = async (
  * ```
  * const decrypted = await decrypt("RW5jcnlwdGVkIGRhdGEgaW4gYmFzZTY0", "M4st3rP4ssw0rd")
  * ```
- * @param {string} buffer Buffer saved in string (from encrypt function)
+ * @param {string} bufferString Buffer saved in string (from encrypt function)
  * @param {string} password
- * @param {("base64" | "binary" | "hex")} [encoding="base64"]
+ * @param {BinaryToTextEncoding} [encoding="base64"]
  * @returns {Promise<string>} Decrypted data
  */
 export const decrypt = async (
-  buffer: string,
+  bufferString: string,
   password: string,
-  encoding: "base64" | "binary" | "hex" = "base64"
+  encoding: BinaryToTextEncoding = "base64",
 ): Promise<string> => {
-  const decode = Buffer.from(buffer, encoding);
+  const decode = Buffer.from(bufferString, encoding);
   const [salt, initVec, authTag, encrypted] = [
     decode.slice(0, 64),
     decode.slice(64, 128),
     decode.slice(128, 144),
-    decode.slice(144).toString()
+    decode.slice(144).toString(),
   ];
 
   const secretKey = await createHash(password, salt);
   const decipher = createDecipheriv("aes-256-gcm", secretKey, initVec);
   decipher.setAuthTag(authTag);
+
   return decipher.update(encrypted, encoding, "utf8") + decipher.final("utf8");
 };
